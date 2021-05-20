@@ -63,11 +63,11 @@ def run():
                     ][0]
                 except:
                     print(
-                        "Loadbalancer doesn't exist in project {}.".format(project_name)
+                        "Loadbalancer {} doesn't exist in project {}.".format(project_loadbalancer_name, project_name)
                     )
                     hetzner_cloud_load_balancer_not_existent_gauge.labels(
                         project_name=project_name,
-                        balancer_name=loadbalancer["name"],
+                        balancer_name=project_loadbalancer_name,
                     ).set(1)
 
                 hetzner_cloud_load_balancer_target_count_gauge.labels(
@@ -98,6 +98,7 @@ def run():
                             state=status,
                             listen_port=port,
                         ).set(count)
+
             while start_time + INTERVAL > time.time():
                 time.sleep(1)
 
