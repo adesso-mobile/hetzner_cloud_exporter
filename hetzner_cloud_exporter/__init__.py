@@ -46,14 +46,34 @@ hetzner_cloud_load_balancer_not_existent_gauge = prometheus_client.Gauge(
     ["project_name", "balancer_name"],
 )
 
+hetzner_cloud_rate_limit_remaining_gauge = prometheus_client.Gauge(
+    "hetzner_cloud_rate_limit_remaining", "desc", ["project_name"]
+)
 
-def _hcloud_get_all_loadbalancers(token):
+hetzner_cloud_rate_limit_limit_gauge = prometheus_client.Gauge(
+    "hetzner_cloud_rate_limit_limit", "desc", ["project_name"]
+)
+
+
+def _hcloud_get_all_loadbalancers(project_name, token):
     base_url = "https://api.hetzner.cloud/v1"
     path = "/load_balancers"
 
-    response = requests.get(
-        "{}{}".format(base_url, path),
+    return _hcloud_call(base_url, path, "get", project_name, token)
+
+
+def _hcloud_call(base_url, path, method, project_name, token):
+    response = requests.request(
+        method=method,
+        url="{}{}".format(base_url, path),
         headers={"Authorization": "Bearer {}".format(token)},
+    )
+
+    hetzner_cloud_rate_limit_limit_gauge.labels(project_name=project_name).set(
+        int(response.headers.get("ratelimit-limit", -1))
+    )
+    hetzner_cloud_rate_limit_remaining_gauge.labels(project_name=project_name).set(
+        int(response.headers.get("ratelimit-remaining", -1))
     )
 
     response.raise_for_status()
@@ -110,7 +130,9 @@ def run():
             for project_name, project in config["targets"].items():
 
                 try:
-                    loadbalancers = _hcloud_get_all_loadbalancers(project["api_key"])
+                    loadbalancers = _hcloud_get_all_loadbalancers(
+                        project_name, project["api_key"]
+                    )
                 except HTTPError as e:
                     log.error(
                         "project {}: Error while calling HCloud API: {}".format(
