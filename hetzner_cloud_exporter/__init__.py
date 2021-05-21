@@ -23,11 +23,11 @@ log = logging.getLogger("Hetzner Cloud Exporter")
 
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-console_handler.setFormatter(formatter)
+file_handler = logging.FileHandler(filename=LOGPATH)
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(formatter)
 
-log.addHandler(console_handler)
+log.addHandler(file_handler)
 log.setLevel(LOGLEVEL)
 
 
